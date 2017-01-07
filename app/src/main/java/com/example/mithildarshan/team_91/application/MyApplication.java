@@ -4,15 +4,12 @@ import android.app.Application;
 
 import io.realm.Realm;
 
-/**
- * Created by mithishri on 1/7/2017.
- */
-
 public class MyApplication extends Application {
 
     @Override
     public void onCreate() {
         super.onCreate();
+        // Initialize Realm. Should only be done once when the application starts.
         Realm.init(this);
     }
 }

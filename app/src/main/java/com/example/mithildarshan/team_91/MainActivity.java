@@ -5,18 +5,24 @@ import android.app.job.JobScheduler;
 import android.content.ComponentName;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.widget.ListAdapter;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import com.example.mithildarshan.team_91.adapter.StockAdapter;
 import com.example.mithildarshan.team_91.background.BackgroundService;
+import com.example.mithildarshan.team_91.background.FetchDailyData;
+import com.example.mithildarshan.team_91.model.Company;
+import com.example.mithildarshan.team_91.model.Record;
 import com.example.mithildarshan.team_91.model.Stock;
 
 import io.realm.Realm;
-import io.realm.RealmChangeListener;
+import io.realm.RealmList;
 import io.realm.RealmResults;
 
 public class MainActivity extends AppCompatActivity {
+
+    //private TextView txt;
+    private Realm realm;
 
     private static final int JOB_ID = 100;
     private JobScheduler mJobScheduler;
@@ -26,8 +32,42 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        //realm = Realm.getDefaultInstance();
+        new FetchDailyData(this).execute();
 
-        mJobScheduler = (JobScheduler) getSystemService(JOB_SCHEDULER_SERVICE);
+        /*txt = (TextView) findViewById(R.id.text_view);
+        txt.setText(" ");
+        for (Company company : realm.where(Company.class).findAll()) {
+
+            txt.append(company.getName());
+            RealmList<Record> records = company.getRecords();
+            int cnt = 0;
+            for (Record rec : records) {
+                if (cnt > 10) break;
+                txt.append("\n" + rec.getTimestamp() + ":" + rec.getClose() + "\n");
+                cnt++;
+            }
+        }*/
+
+       /* new AsyncTask<Void, Void, String>() {
+            @Override
+            protected String doInBackground(Void... voids) {
+                realm = Realm.getDefaultInstance();
+                String status = "";
+                for (Company company : realm.where(Company.class).findAll()) {
+                    RealmList<Record> records = company.getRecords();
+
+                    for (Record rec : records) {
+                        if (rec.getTimestamp() > 10) break;
+                        status += "\n" + rec.getTimestamp() + ":" + rec.getClose() + "\n";
+                    }
+                }
+                return status;
+            }
+            */
+
+
+       // mJobScheduler = (JobScheduler) getSystemService(JOB_SCHEDULER_SERVICE);
         //constructJob();
 
        /* SharedPreferences prefs = getSharedPreferences("prefs", Context.MODE_PRIVATE);
@@ -35,9 +75,9 @@ public class MainActivity extends AppCompatActivity {
 
         //test.setText("Jobscheduler triggerd " + n + " times");
 
-        constructJob();
+        //constructJob();
 
-        Realm realm = Realm.getDefaultInstance();
+        /*Realm realm = Realm.getDefaultInstance();
 
         stocks = realm.where(Stock.class).findAll();
 
@@ -45,7 +85,7 @@ public class MainActivity extends AppCompatActivity {
 
         ListView listView = (ListView) findViewById(R.id.stock_listview);
         listView.setAdapter(stockAdapter);
-
+*/
     }
 
     private void constructJob() {
