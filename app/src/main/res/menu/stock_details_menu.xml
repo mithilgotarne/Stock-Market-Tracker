@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context=".CatalogActivity">
+
+    <item
+        android:id="@+id/favourite"
+        android:title="Favourite"
+        android:icon="@drawable/ic_star_border_black_24dp"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/set_watch_point"
+        android:title="Set Watch Point"
+        android:icon="@drawable/ic_alarm_black_24dp"
+        app:showAsAction="always" />
+</menu>
