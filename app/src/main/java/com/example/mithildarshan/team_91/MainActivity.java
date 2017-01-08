@@ -4,6 +4,7 @@ import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
 import android.content.ComponentName;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
@@ -12,6 +13,7 @@ import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -97,9 +99,21 @@ public class MainActivity extends AppCompatActivity {
 
         Realm realm = Realm.getDefaultInstance();
         stocks = realm.where(Stock.class).findAll();
-        StockAdapter stockAdapter = new StockAdapter(MainActivity.this, stocks);
+        final StockAdapter stockAdapter = new StockAdapter(MainActivity.this, stocks);
         ListView listView = (ListView) findViewById(R.id.stock_listview);
         listView.setAdapter(stockAdapter);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Stock stock = stockAdapter.getItem(position);
+                if (stock != null) {
+                    String string = stock.getName();
+                    Intent intent = new Intent(MainActivity.this, StockDetailsActivity.class);
+                    intent.putExtra("Ticker", string);
+                    startActivity(intent);
+                }
+            }
+        });
 
         createRefreshJob(prefs.getInt(KEY_REF_RATE, 1));
 

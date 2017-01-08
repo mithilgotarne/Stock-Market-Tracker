@@ -9,4 +9,7 @@
 
     <!-- Text color for the primary location of the earthquake in the list item -->
     <color name="textColorEarthquakeLocation">#2B3D4D</color>
+
+    <color name="positiveDiff">#3D9400</color>
+    <color name="negDiff">#DD4B39</color>
 </resources>
