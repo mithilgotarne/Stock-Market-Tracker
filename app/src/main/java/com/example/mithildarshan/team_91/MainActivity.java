@@ -3,6 +3,7 @@ package com.example.mithildarshan.team_91;
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
 import android.content.ComponentName;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.ListView;
@@ -33,7 +34,11 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         //realm = Realm.getDefaultInstance();
-        new FetchDailyData(this).execute();
+        //new FetchDailyData(this).execute();
+
+        Intent intent = new Intent(MainActivity.this, StockDetailsActivity.class);
+        intent.putExtra("Ticker", "MARUTI");
+        startActivity(intent);
 
         /*txt = (TextView) findViewById(R.id.text_view);
         txt.setText(" ");
