@@ -1,9 +1,13 @@
 package com.example.mithildarshan.team_91.background;
 
+import android.app.NotificationManager;
+import android.content.Context;
 import android.os.AsyncTask;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.example.mithildarshan.team_91.R;
 import com.example.mithildarshan.team_91.model.Company;
 import com.example.mithildarshan.team_91.model.Record;
 import com.example.mithildarshan.team_91.model.Stock;

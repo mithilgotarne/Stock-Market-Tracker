@@ -3,9 +3,12 @@ package com.example.mithildarshan.team_91;
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -16,6 +19,8 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.mithildarshan.team_91.adapter.StockAdapter;
@@ -27,7 +32,9 @@ import com.example.mithildarshan.team_91.model.Stock;
 import com.example.mithildarshan.team_91.util.Utils;
 
 import io.realm.Realm;
+import io.realm.RealmChangeListener;
 import io.realm.RealmResults;
+import io.realm.Sort;
 
 import static com.example.mithildarshan.team_91.util.Utils.KEY_FIRST_START;
 import static com.example.mithildarshan.team_91.util.Utils.KEY_REF_RATE;
@@ -42,6 +49,8 @@ public class MainActivity extends AppCompatActivity {
     private SharedPreferences prefs;
     private JobScheduler mJobScheduler;
     private RealmResults<Stock> stocks;
+    private ProgressBar progressBar;
+    private TextView noTextView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +61,19 @@ public class MainActivity extends AppCompatActivity {
         mJobScheduler = (JobScheduler) getSystemService(JOB_SCHEDULER_SERVICE);
 
         checkFirstStart();
+
+        progressBar = (ProgressBar) findViewById(R.id.progress_bar);
+        noTextView = (TextView) findViewById(R.id.no_stock_textview);
+
+        if (!isConnected()) {
+
+            progressBar.setVisibility(View.GONE);
+            noTextView.setText(getString(R.string.no_internet));
+
+            return;
+
+        }
+
         //realm = Realm.getDefaultInstance();
         //new FetchDailyData(this).execute();
 
@@ -98,9 +120,22 @@ public class MainActivity extends AppCompatActivity {
         //constructJob();
 
         Realm realm = Realm.getDefaultInstance();
-        stocks = realm.where(Stock.class).findAll();
+        stocks = realm.where(Stock.class).distinct("name");
+        if (stocks != null && stocks.size() > 0) {
+            progressBar.setVisibility(View.GONE);
+        }
+        stocks.addChangeListener(new RealmChangeListener<RealmResults<Stock>>() {
+            @Override
+            public void onChange(RealmResults<Stock> element) {
+                progressBar.setVisibility(View.GONE);
+                if (stocks == null || stocks.size() > 0) {
+                    noTextView.setText(getString(R.string.no_stocks_found));
+                }
+            }
+        });
         final StockAdapter stockAdapter = new StockAdapter(MainActivity.this, stocks);
         ListView listView = (ListView) findViewById(R.id.stock_listview);
+        listView.setEmptyView(noTextView);
         listView.setAdapter(stockAdapter);
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -114,31 +149,39 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-
-        createRefreshJob(prefs.getInt(KEY_REF_RATE, 1));
-
     }
 
     private void checkFirstStart() {
 
-        if (!prefs.contains(KEY_FIRST_START)) {
+        /*if (!prefs.contains(KEY_FIRST_START)) {
 
             new FetchDailyData() {
                 @Override
                 protected void onPostExecute(Void aVoid) {
                     super.onPostExecute(aVoid);
                     prefs.edit().putBoolean(KEY_FIRST_START, false).apply();
+
+                    new RefreshTask() {
+                        @Override
+                        protected void onPostExecute(Boolean aBoolean) {
+
+                        }
+                    }.execute();
+
                 }
             }.execute();
 
-            constructJob();
-        }
+        }*/
+        //progressBar.setVisibility(View.GONE);
+        constructJob();
+        createRefreshJob(prefs.getInt(KEY_REF_RATE, 1));
     }
 
     private void constructJob() {
         JobInfo.Builder builder = new JobInfo.Builder(JOB_ID, new ComponentName(this, BackgroundService.class));
         builder.setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
                 .setPeriodic(24 * 60 * 60 * 1000);
+
         mJobScheduler.schedule(builder.build());
     }
 
@@ -154,6 +197,7 @@ public class MainActivity extends AppCompatActivity {
         getMenuInflater().inflate(R.menu.main, menu);
         return true;
     }
+
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -184,6 +228,13 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    private boolean isConnected() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        return activeNetwork != null && activeNetwork.isConnectedOrConnecting();
+    }
+
     private void createDialog() {
 
         AlertDialog.Builder alert = new AlertDialog.Builder(this);
@@ -204,7 +255,7 @@ public class MainActivity extends AppCompatActivity {
                 String YouEditTextValue = edittext.getText().toString();
                 if (!TextUtils.isEmpty(YouEditTextValue)) {
                     if (TextUtils.isDigitsOnly(YouEditTextValue)) {
-                        if (Integer.parseInt(YouEditTextValue) > 1) {
+                        if (Integer.parseInt(YouEditTextValue) >= 1) {
                             prefs.edit().putInt(KEY_REF_RATE, Integer.parseInt(YouEditTextValue)).apply();
                             createRefreshJob(Integer.parseInt(YouEditTextValue));
                         } else

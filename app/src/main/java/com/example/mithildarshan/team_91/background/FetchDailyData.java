@@ -42,7 +42,7 @@ public class FetchDailyData extends AsyncTask<Void, Void, Void> {
         //Toast.makeText(c, "Deleted successfully", Toast.LENGTH_SHORT).show();
         Log.d("FetchDaily", "Deleted");
 
-        String[] tickers = {"MARUTI", "INFY", "YESBANK", "HDFC", "TCS"};
+        String[] tickers = {"MARUTI", "INFY", "YESBANK", "HDFC", "TCS", "RELIANCE", "KOTAKBANK"};
         for (String ticker : tickers) {
             getData(ticker);
 

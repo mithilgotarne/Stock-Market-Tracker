@@ -1,6 +1,7 @@
 package com.example.mithildarshan.team_91.model;
 
 import io.realm.RealmObject;
+import io.realm.annotations.Index;
 
 /**
  * Created by mithishri on 1/7/2017.
@@ -17,6 +18,7 @@ public class Stock extends RealmObject {
     private boolean favourite;
     private float highPoint;
     private float lowPoint;
+    @Index
     private String name;
 
     public String getName() {

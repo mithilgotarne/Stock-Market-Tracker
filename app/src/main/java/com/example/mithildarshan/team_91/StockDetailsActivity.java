@@ -3,26 +3,26 @@ package com.example.mithildarshan.team_91;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
-import android.content.ContentUris;
-import android.content.ContentValues;
+import android.content.DialogInterface;
 import android.graphics.Color;
-import android.net.Uri;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
+import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.DatePicker;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.example.mithildarshan.team_91.background.FetchGraphData;
+import com.example.mithildarshan.team_91.model.Stock;
 import com.jjoe64.graphview.GraphView;
-import com.jjoe64.graphview.GridLabelRenderer;
 import com.jjoe64.graphview.helper.DateAsXAxisLabelFormatter;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
@@ -31,17 +31,20 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
 
-public class StockDetailsActivity extends AppCompatActivity implements DatePickerDialog.OnDateSetListener{
+import io.realm.Realm;
+
+public class StockDetailsActivity extends AppCompatActivity implements DatePickerDialog.OnDateSetListener {
 
     private DataPoint[] dataPoint;
 
     private GraphView graph;
     private TextView textView;
+    private Stock stock;
+    private Realm realm;
 
-    private boolean isFavourite = false;
     private boolean isWatchPointSet = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -50,22 +53,30 @@ public class StockDetailsActivity extends AppCompatActivity implements DatePicke
         //tv.setSelected(true);
         String ticker = getIntent().getExtras().getString("Ticker");
 
+        if (ticker == null)
+            finish();
+
+        realm = Realm.getDefaultInstance();
+        stock = realm.where(Stock.class).equalTo("name", ticker).findFirst();
+        setTitle(ticker);
+
+        Log.d("SDA", "Stock low/high" + stock.getLowPoint() + " " + stock.getHighPoint());
+
         Log.d("StockDetailsActivity", ticker);
-        new FetchGraphData(){
+        new FetchGraphData() {
             @Override
             protected void onPostExecute(DataPoint[] dataPoints) {
                 super.onPostExecute(dataPoints);
                 dataPoint = dataPoints;
-                if(dataPoints!=null){
+                if (dataPoints != null) {
                     plotGraph(dataPoints);
-                }
-                else{
+                } else {
                     Log.d("StockDetailsActivity", "Why Null?");
                 }
 
             }
 
-            public void plotGraph(DataPoint[] dataPoints){
+            public void plotGraph(DataPoint[] dataPoints) {
 
                 graph = (GraphView) findViewById(R.id.graph);
                 graph.setVisibility(View.VISIBLE);
@@ -74,19 +85,19 @@ public class StockDetailsActivity extends AppCompatActivity implements DatePicke
                 ProgressBar progressBar = (ProgressBar) findViewById(R.id.progress_bar);
                 progressBar.setVisibility(View.GONE);
                 LineGraphSeries<DataPoint> series = new LineGraphSeries<>(dataPoints);
-                if(series != null){
+                if (series != null) {
                     series.setColor(ContextCompat.getColor(getApplicationContext(), R.color.colorPrimary));
                     series.setDrawBackground(true);
                     series.setBackgroundColor(Color.LTGRAY);
 
-                   //graph.getGridLabelRenderer().setHorizontalLabelsVisible(false);
+                    //graph.getGridLabelRenderer().setHorizontalLabelsVisible(false);
                     graph.getViewport().setXAxisBoundsManual(true);
                     graph.getViewport().setMinX(dataPoints[0].getX());
-                    graph.getViewport().setMaxX(dataPoints[dataPoints.length-1].getX());
+                    graph.getViewport().setMaxX(dataPoints[dataPoints.length - 1].getX());
 
                     //graph.getGridLabelRenderer().setLabelVerticalWidth(30);
                     graph.getGridLabelRenderer().setTextSize(15);
-                   graph.getGridLabelRenderer().setHorizontalLabelsAngle(30);
+                    graph.getGridLabelRenderer().setHorizontalLabelsAngle(30);
 
 
                     graph.getGridLabelRenderer().setLabelFormatter(new DateAsXAxisLabelFormatter(getApplicationContext()));
@@ -94,12 +105,11 @@ public class StockDetailsActivity extends AppCompatActivity implements DatePicke
                     //graph.getGridLabelRenderer().setHumanRounding(false);
                     //graph.getGridLabelRenderer().setNumHorizontalLabels(dataPoints.length);
 
-                   // graph.getViewport().setScalableY(true);
-                   // graph.getViewport().setScrollable(true);
+                    // graph.getViewport().setScalableY(true);
+                    // graph.getViewport().setScrollable(true);
                     graph.addSeries(series);
 
-                }
-                else{
+                } else {
                     Log.d("StockDetailsActivity", "Wh Null?");
                 }
 
@@ -115,18 +125,16 @@ public class StockDetailsActivity extends AppCompatActivity implements DatePicke
 
         getMenuInflater().inflate(R.menu.stock_details_menu, menu);
         MenuItem menuItem = menu.findItem(R.id.favourite);
-        if(isFavourite){
+        if (stock.isFavourite()) {
             menuItem.setIcon(R.drawable.ic_star_black_24dp);
-        }
-        else{
+        } else {
             menuItem.setIcon(R.drawable.ic_star_border_black_24dp);
         }
 
         menuItem = menu.findItem(R.id.set_watch_point);
-        if(isWatchPointSet){
+        if (isWatchPointSet) {
             menuItem.setIcon(R.drawable.ic_alarm_on_black_24dp);
-        }
-        else{
+        } else {
             menuItem.setIcon(R.drawable.ic_alarm_black_24dp);
         }
         return true;
@@ -139,19 +147,22 @@ public class StockDetailsActivity extends AppCompatActivity implements DatePicke
         switch (item.getItemId()) {
 
             case R.id.favourite:
-                if(isFavourite){
-                    isFavourite = false;
+                if (stock.isFavourite()) {
+                    realm.beginTransaction();
+                    stock.setFavourite(false);
+                    realm.commitTransaction();
                     item.setIcon(R.drawable.ic_star_border_black_24dp);
-                }
-                else{
-                    isFavourite = true;
+                } else {
+                    realm.beginTransaction();
+                    stock.setFavourite(true);
+                    realm.commitTransaction();
                     item.setIcon(R.drawable.ic_star_black_24dp);
                 }
 
                 return true;
 
             case R.id.set_watch_point:
-                item.setIcon(R.drawable.ic_alarm_on_black_24dp);
+                createDialog();
                 return true;
         }
         return super.onOptionsItemSelected(item);
@@ -168,11 +179,11 @@ public class StockDetailsActivity extends AppCompatActivity implements DatePicke
         Calendar c = Calendar.getInstance();
 
         c.set(year, month, dayOfMonth, 0, 0, 0);
-        textView.setText(year + "/"+(month+1)+"/"+dayOfMonth );
+        textView.setText(year + "/" + (month + 1) + "/" + dayOfMonth);
         graph = (GraphView) findViewById(R.id.graph);
         graph.removeAllSeries();
 
-        if(dataPoint == null) Log.e("StockDetailsActivity", "DAMN");
+        if (dataPoint == null) Log.e("StockDetailsActivity", "DAMN");
         graph.getViewport().setMinX(c.getTimeInMillis());
         //graph.getViewport().setMaxX(dataPoint[dataPoint.length - 1].getX());
         graph.getViewport().setXAxisBoundsManual(true);
@@ -186,7 +197,7 @@ public class StockDetailsActivity extends AppCompatActivity implements DatePicke
 
         graph.getGridLabelRenderer().setLabelFormatter(new DateAsXAxisLabelFormatter(getApplicationContext()));
         LineGraphSeries<DataPoint> series = new LineGraphSeries<>(dataPoint);
-        if(series != null) {
+        if (series != null) {
 
             series.setColor(ContextCompat.getColor(getApplicationContext(), R.color.colorPrimary));
             series.setDrawBackground(true);
@@ -199,8 +210,7 @@ public class StockDetailsActivity extends AppCompatActivity implements DatePicke
         }
     }
 
-    public static class DatePickerFragment extends DialogFragment
-             {
+    public static class DatePickerFragment extends DialogFragment {
 
         @Override
         public Dialog onCreateDialog(Bundle savedInstanceState) {
@@ -216,12 +226,12 @@ public class StockDetailsActivity extends AppCompatActivity implements DatePicke
             Calendar cl = Calendar.getInstance();
             Log.d("STockDetailsActivity", Long.toString(cl.getTimeInMillis()));
 
-            DatePickerDialog datePickerDialog = new DatePickerDialog(getActivity(), (DatePickerDialog.OnDateSetListener)getActivity(), year, month, day);
+            DatePickerDialog datePickerDialog = new DatePickerDialog(getActivity(), (DatePickerDialog.OnDateSetListener) getActivity(), year, month, day);
             DatePicker datePicker = datePickerDialog.getDatePicker();
             try {
                 datePicker.setMinDate((df.parse("2007-01-01").getTime()));
-                long minusTwentFour = 6*24*60*60*1000;
-                datePicker.setMaxDate(cl.getTimeInMillis()-minusTwentFour);
+                long minusTwentFour = 6 * 24 * 60 * 60 * 1000;
+                datePicker.setMaxDate(cl.getTimeInMillis() - minusTwentFour);
                 //datePicker.setMinDate((df.parse("2007-01-01").getTime()));
             } catch (ParseException e) {
                 e.printStackTrace();
@@ -230,6 +240,43 @@ public class StockDetailsActivity extends AppCompatActivity implements DatePicke
             return datePickerDialog;
         }
 
+
+    }
+
+    private void createDialog() {
+
+        AlertDialog.Builder alert = new AlertDialog.Builder(this);
+        alert.setMessage("Enter Refresh Rate in minutes");
+        alert.setTitle("Refresh Rate");
+
+        View view = getLayoutInflater().inflate(R.layout.watchdailog, null);
+        final EditText highet = (EditText) view.findViewById(R.id.high_edittext);
+        highet.setText(String.valueOf(stock.getHighPoint()));
+        final EditText lowet = (EditText) view.findViewById(R.id.low_edittext);
+        lowet.setText(String.valueOf(stock.getLowPoint()));
+
+        alert.setView(view);
+
+        alert.setPositiveButton("Save", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int whichButton) {
+                String highValue = highet.getText().toString();
+                String lowValue = lowet.getText().toString();
+                if (!TextUtils.isEmpty(highValue) && !TextUtils.isEmpty(lowValue)) {
+                    realm.beginTransaction();
+                    stock.setLowPoint(Float.parseFloat(lowValue));
+                    stock.setHighPoint(Float.parseFloat(highValue));
+                    realm.commitTransaction();
+                }
+            }
+        });
+
+        alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int whichButton) {
+                // what ever you want to do with No option.
+            }
+        });
+
+        alert.show();
 
     }
 }
